@@ -4,7 +4,7 @@ import numpy as np
 import os
 import pandas as pd
 import streamlit.components.v1 as components
-from google import genai
+from groq import Groq
 
 # ── Load models ──────────────────────────────────────────────
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -14,8 +14,8 @@ features      = pickle.load(open(os.path.join(BASE_DIR, 'models/features.pkl'), 
 cluster_names = pickle.load(open(os.path.join(BASE_DIR, 'models/cluster_names.pkl'), 'rb'))
 df_clusters   = pd.read_csv(os.path.join(BASE_DIR, 'data/processed/students_clustered.csv'))
 
-# ── Gemini client — created once at top ──────────────────────
-client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+# ── Groq client ──────────────────────────────────────────────
+groq_client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 # ── Session state init ───────────────────────────────────────
 if 'page' not in st.session_state:
@@ -28,7 +28,7 @@ if 'advice' not in st.session_state:
     st.session_state.advice = None
 
 # ── Page config ───────────────────────────────────────────────
-st.set_page_config(page_title="StudyDNA", page_icon="🧬", layout="centered")
+st.set_page_config(page_title="StudyWELL", page_icon="🧬", layout="centered")
 
 # ── Custom CSS ────────────────────────────────────────────────
 st.markdown("""
@@ -61,7 +61,7 @@ def prev_page():
 # PAGE 0 — Welcome
 # ════════════════════════════════════════════════════════════
 if st.session_state.page == 0:
-    st.title("🧬 StudyDNA")
+    st.title("😉 StudyWELL")
     st.subheader("Discover your learner profile")
     st.markdown("""
     Answer **4 short sections** about your daily habits.
@@ -233,7 +233,6 @@ elif st.session_state.page == 4:
             st.session_state.answers['parental_idx']   = ["Not supportive","A little","Quite supportive","Very supportive"].index(parental_q)
             st.session_state.answers['academic_p_q']   = academic_p_q
             st.session_state.answers['academic_idx']   = ["Very low","Moderate","High","Extreme"].index(academic_p_q)
-            # Reset advice and chat when re-analyzing
             st.session_state.advice = None
             st.session_state.chat_history = []
             next_page()
@@ -244,7 +243,6 @@ elif st.session_state.page == 4:
 elif st.session_state.page == 5:
     a = st.session_state.answers
 
-    # ── Convert answers to numbers ────────────────────────
     def to_scale(answer, options):
         idx = options.index(answer)
         return round(1 + (idx / (len(options) - 1)) * 9, 1)
@@ -268,7 +266,6 @@ elif st.session_state.page == 5:
     parental_sup = to_scale(a['parental_q'],    ["Not supportive","A little","Quite supportive","Very supportive"])
     academic_p   = to_scale(a['academic_p_q'],  ["Very low","Moderate","High","Extreme"])
 
-    # Estimate hidden clinical scores from observable behavior
     anxiety     = min(10, stress * 1.1 + (10 - sleep) * 0.3)
     depression  = min(10, (10 - motivation) * 0.8 + burnout * 1.5)
     mental_h    = max(1,  10 - (stress * 0.4 + anxiety * 0.3 + burnout * 0.5))
@@ -276,7 +273,6 @@ elif st.session_state.page == 5:
     daily_study = study
     daily_sleep = sleep
 
-    # ── Predict cluster ───────────────────────────────────
     user_input = np.array([[
         study, daily_study, attendance, time_mgmt, motivation,
         sleep, daily_sleep, exercise, physical,
@@ -292,7 +288,6 @@ elif st.session_state.page == 5:
     cluster_id    = kmeans.predict(user_scaled)[0]
     cluster_label = cluster_names[cluster_id]
 
-    # ── Get cluster's average mental health profile ───────
     cluster_profile = df_clusters[df_clusters['cluster_name'] == cluster_label][
         ['anxiety_score', 'depression_score', 'burnout_level_enc',
          'mental_health_rating', 'academic_pressure_score',
@@ -309,7 +304,7 @@ elif st.session_state.page == 5:
     }
     color = colors.get(cluster_label, "#7C83FD")
 
-    st.title("🧬 Your StudyDNA Profile")
+    st.title(" 😉 Your StudyWell Profile")
     st.markdown(f"""
 <div style="background:{color}22; border-left:6px solid {color};
             padding:24px; border-radius:12px; margin:10px 0">
@@ -326,7 +321,6 @@ elif st.session_state.page == 5:
 
     st.divider()
 
-    # ── Key stats ─────────────────────────────────────────
     st.subheader("📊 Your habits at a glance")
     col1, col2, col3 = st.columns(3)
     col1.metric("📖 Study", f"{study}h/day")
@@ -340,7 +334,6 @@ elif st.session_state.page == 5:
 
     st.divider()
 
-    # ── Cluster mental health profile ─────────────────────
     st.subheader("🧠 Mental health profile of your group")
     st.caption("Average values for students classified in the same segment as you.")
 
@@ -357,7 +350,6 @@ elif st.session_state.page == 5:
 
     st.divider()
 
-    # ── Embedded charts ───────────────────────────────────
     st.subheader("📈 Visual analysis — where you stand")
     tab1, tab2, tab3 = st.tabs(["🕸 Cluster radar", "🔵 Student map", "📦 Exam scores"])
 
@@ -387,7 +379,7 @@ elif st.session_state.page == 5:
 
     st.divider()
 
-    # ── AI personalized plan — generate only once ─────────
+    # ── AI personalized plan ──────────────────────────────
     st.subheader("🤖 Your personalized plan")
 
     if st.session_state.advice is None:
@@ -407,71 +399,67 @@ Based on 80,000+ students with the same profile, this group typically shows:
 - Mental health rating: {mh['mental_health_rating']}/10
 
 Write a warm, direct, encouraging response with:
-1. What this profile means — including the mental health pattern (2 sentences max, be honest)
-2. Their 3 biggest risks if nothing changes (be specific to their numbers)
-3. A concrete 4-week improvement plan — one clear goal per week, addressing BOTH habits AND mental wellbeing
+1. What this profile means including the mental health pattern (2 sentences max)
+2. Their 3 biggest risks if nothing changes (specific to their numbers)
+3. A concrete 4-week improvement plan — one goal per week, addressing BOTH habits AND mental wellbeing
 4. One powerful motivational closing insight
 
 Use simple language. Be specific, not generic."""
 
         with st.spinner("🤖 Building your personalized plan..."):
-            response = client.models.generate_content(
-                model="gemini-2.0-flash",
-                contents=prompt
+            response = groq_client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=1000
             )
-            st.session_state.advice = response.text
+            st.session_state.advice = response.choices[0].message.content
 
     st.markdown(st.session_state.advice)
     st.divider()
 
     # ── Chatbot ───────────────────────────────────────────
     st.subheader("💬 Ask a follow-up question")
+    # Chat input FIRST
+    followup = st.chat_input("e.g. How do I sleep better? How do I reduce stress before exams?")
     st.caption("Ask anything about your profile, your plan, or how to improve.")
-
     # Show previous chat messages
     for msg in st.session_state.chat_history:
         with st.chat_message(msg['role']):
             st.markdown(msg['content'])
 
-    # Chat input
-    followup = st.chat_input("e.g. How do I sleep better? How do I reduce stress before exams?")
-
     if followup:
-        # Show user message immediately
         with st.chat_message("user"):
             st.markdown(followup)
         st.session_state.chat_history.append({"role": "user", "content": followup})
 
-        # Build context-aware prompt
         chat_prompt = f"""You are an academic wellbeing advisor.
 
 Student profile: '{cluster_label}'
-Their habits: study={study}h/day, sleep={sleep}h/night, stress={a['stress_q']},
+Habits: study={study}h/day, sleep={sleep}h/night, stress={a['stress_q']},
 social_media={social_media}h/day, motivation={a['motivation_q']}, burnout={a['burnout_q']}
 Cluster mental health avg: anxiety={mh['anxiety_score']}/10, depression={mh['depression_score']}/10
 
-Personalized plan already given to them:
-{st.session_state.advice}
+Plan already given: {st.session_state.advice}
 
-Student follow-up question: {followup}
+Student question: {followup}
 
-Answer in 3-5 sentences. Be specific, practical, and encouraging.
-Reference their actual numbers when relevant."""
+Answer in 3-5 sentences. Be specific, practical, and encouraging."""
 
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
-                chat_resp = client.models.generate_content(
-                    model="gemini-1.5-flash-latest",
-                    contents=chat_prompt
+                chat_resp = groq_client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[{"role": "user", "content": chat_prompt}],
+                    max_tokens=500
                 )
-                st.markdown(chat_resp.text)
+                reply = chat_resp.choices[0].message.content
+                st.markdown(reply)
 
         st.session_state.chat_history.append({
             "role": "assistant",
-            "content": chat_resp.text
+            "content": reply
         })
-
-    st.divider()
+   
     if st.button("🔄 Start over"):
         st.session_state.page = 0
         st.session_state.answers = {}
