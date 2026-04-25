@@ -1,6 +1,5 @@
 Here's your updated README.md:
 
-```markdown
 # 😉 StudyWELL — Student Habits & Mental Health Segmentation
 
 A machine learning web application that analyzes student lifestyle habits and mental health patterns to automatically classify them into behavioral segments, then provides personalized AI-generated improvement plans.
