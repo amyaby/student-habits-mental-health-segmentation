@@ -138,6 +138,5 @@ streamlit run app/app.py
 
 ##  Author
 
-**Imane** — Engineering student, ENSA Berrechid
-S8 Data Mining Project
-```
+**Amy Aby** — Engineering student, ENSA Berrechid  
+S8 Data Mining Project  
