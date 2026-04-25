@@ -1,0 +1,1 @@
+ Streamlit Cloud needs requirements.txt to know which libraries to install. Your local machine already has everything installed in your venv, but Streamlit Cloud starts from zero — a fresh empty server. It reads requirements.txt and installs each library listed there.
