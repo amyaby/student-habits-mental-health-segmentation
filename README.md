@@ -7,9 +7,9 @@ A machine learning web application that analyzes student lifestyle habits and me
 ## Live Demo
 [Open StudyWELL](https://student-habits-mental-health-segmentation-m5z3qe5szfjq3u2v79hl.streamlit.app/)
 
-> 💡 Try the app to discover your student profile — answer 4 short sections about your daily habits and get a personalized AI improvement plan in seconds.
-> ⚠️ **If you're forking this project:** don't forget to add your API key in Streamlit Cloud.
-> Go to **Manage App** (bottom right of your app) → **Settings** → **Secrets** → paste:
+> 💡 Try the app to discover your student profile — answer 4 short sections about your daily habits and get a personalized AI improvement plan in seconds.  
+> ⚠️ **If you're forking this project:** don't forget to add your API key in Streamlit Cloud.  
+> Go to **Manage App** (bottom right of your app) → **Settings** → **Secrets** → paste:  
 > ```toml
 > GROQ_API_KEY = "gsk_..."
 > ```
