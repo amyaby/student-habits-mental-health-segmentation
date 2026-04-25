@@ -28,7 +28,7 @@ if 'advice' not in st.session_state:
     st.session_state.advice = None
 
 # ── Page config ───────────────────────────────────────────────
-st.set_page_config(page_title="StudyWELL", page_icon="🧬", layout="centered")
+st.set_page_config(page_title="StudyWELL", page_icon="😉", layout="centered")
 
 # ── Custom CSS ────────────────────────────────────────────────
 st.markdown("""
