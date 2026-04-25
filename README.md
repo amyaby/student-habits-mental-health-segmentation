@@ -57,7 +57,7 @@ student-habits-mental-health-segmentation/
 ├── script.ipynb            ← full ML notebook
 └── requirements.txt        ← all dependencies for deployment
 
-
+```
 ## ML Pipeline
 
 ```
