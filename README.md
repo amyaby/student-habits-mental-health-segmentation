@@ -1,4 +1,3 @@
-Here's your updated README.md:
 
 # 😉 StudyWELL — Student Habits & Mental Health Segmentation
 
